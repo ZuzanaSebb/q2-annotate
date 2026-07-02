@@ -1821,15 +1821,18 @@ plugin.methods.register_function(
     function=q2_annotate.eggnog.transfer_eggnog_annotations,
     inputs={
         "ortholog_annotations": GenomeData[NOG],
-        "destination": FeatureData[MAG] | FeatureMap[MAGtoContigs],
+        "destination": FeatureData[MAG] | SampleData[MAGs],
+        "contig_map": FeatureMap[MAGtoContigs],
     },
     parameters={},
     outputs=[("transferred_annotations", GenomeData[NOG])],
     input_descriptions={
         "ortholog_annotations": "Ortholog annotations to transfer or aggregate.",
-        "destination": (
-            "FeatureData[MAG] to subset annotations, or "
-            "FeatureMap[MAGtoContigs] to aggregate contig-level annotations."
+        "destination": "MAGs to transfer annotations to.",
+        "contig_map": (
+            "Mapping of MAG IDs to contig IDs. Required when the source "
+            "annotations are contig-level and need to be aggregated into "
+            "per-MAG files."
         ),
     },
     parameter_descriptions={},
@@ -1838,10 +1841,10 @@ plugin.methods.register_function(
     },
     name="Transfer or aggregate eggNOG annotations.",
     description=(
-        "Transfers eggNOG ortholog annotations based on the destination "
-        "type. A FeatureData[MAG] copies annotations for matching MAGs "
-        "(e.g., after dereplication); a FeatureMap[MAGtoContigs] "
-        "aggregates contig-level annotations into per-MAG files."
+        "Transfers eggNOG ortholog annotations to a set of MAGs. "
+        "If a contig map is provided, contig-level annotations are "
+        "aggregated into per-MAG files. Otherwise, annotations are "
+        "copied for matching MAGs (e.g., after dereplication)."
     ),
     citations=[],
 )
