@@ -258,9 +258,7 @@ class TestTransferAnnotations(TestPluginBase):
         )
 
     def test_transfer_to_feature_data(self):
-        result = transfer_eggnog_annotations(
-            self.annotations, self.feature_data_mags
-        )
+        result = transfer_eggnog_annotations(self.annotations, self.feature_data_mags)
         src = self.annotations.annotation_dict()
         self.assertEqual(
             set(result.annotation_dict().keys()),
@@ -276,7 +274,9 @@ class TestTransferAnnotations(TestPluginBase):
         uuid = "00000000-0000-4000-8000-000000000000"
         Path(self.temp_dir.name, f"{uuid}.fasta").touch()
         empty_mags = MAGSequencesDirFmt(self.temp_dir.name, mode="r")
-        with self.assertRaisesRegex(ValueError, "No annotation files matched"):
+        with self.assertRaisesRegex(
+            ValueError, "No annotation files matched the destination MAG IDs"
+        ):
             transfer_eggnog_annotations(self.annotations, empty_mags)
 
 
@@ -291,6 +291,12 @@ class TestAnnotateMagsFromContigs(TestPluginBase):
         self.contig_annotations = OrthologAnnotationDirFmt(
             self.get_data_path("contig-annotations/"), mode="r"
         )
+
+        for mag_id in (self.MAG1, self.MAG2):
+            Path(self.temp_dir.name, f"{mag_id}.fasta").write_text(
+                ">placeholder\nACGT\n"
+            )
+        self.mags = MAGSequencesDirFmt(self.temp_dir.name, mode="r")
         self.contig_map = MAGtoContigsDirFmt(
             self.get_data_path("mag-to-contigs/"), mode="r"
         )
@@ -306,7 +312,9 @@ class TestAnnotateMagsFromContigs(TestPluginBase):
         return df[df.columns[0]].tolist()
 
     def test_aggregate_groups_contigs_into_mags(self):
-        result = transfer_eggnog_annotations(self.contig_annotations, self.contig_map)
+        result = transfer_eggnog_annotations(
+            self.contig_annotations, self.mags, self.contig_map
+        )
         self.assertEqual(set(result.annotation_dict().keys()), {self.MAG1, self.MAG2})
         self.assertEqual(
             sorted(self._query_ids(result, self.MAG1)),
@@ -315,7 +323,9 @@ class TestAnnotateMagsFromContigs(TestPluginBase):
         self.assertEqual(self._query_ids(result, self.MAG2), ["k141_300_0"])
 
     def test_aggregate_preserves_header_and_drops_footer(self):
-        result = transfer_eggnog_annotations(self.contig_annotations, self.contig_map)
+        result = transfer_eggnog_annotations(
+            self.contig_annotations, self.mags, self.contig_map
+        )
         lines = Path(result.annotation_dict()[self.MAG1]).read_text().splitlines()
         self.assertIn("#query\tseed_ortholog\tevalue", lines[4])
         self.assertFalse(lines[-1].startswith("##"))
@@ -323,12 +333,12 @@ class TestAnnotateMagsFromContigs(TestPluginBase):
     def test_aggregate_warns_on_unmatched_rows(self):
         with self.assertWarns(UserWarning):
             result = transfer_eggnog_annotations(
-                self.contig_annotations, self.contig_map_partial
+                self.contig_annotations, self.mags, self.contig_map_partial
             )
         self.assertEqual(set(result.annotation_dict().keys()), {self.MAG1})
 
     def test_aggregate_raises_when_nothing_matches(self):
         with self.assertRaisesRegex(ValueError, "No annotation rows could be"):
             transfer_eggnog_annotations(
-                self.contig_annotations, self.contig_map_nomatch
+                self.contig_annotations, self.mags, self.contig_map_nomatch
             )
