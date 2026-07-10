@@ -763,10 +763,18 @@ plugin.methods.register_function(
     ],
 )
 
+T_orthologs_in, P_orthologs_out = TypeMap(
+    {
+        SampleData[Contigs]: Properties("contigs"),
+        SampleData[MAGs]: Properties("mags"),
+        FeatureData[MAG]: Properties("mags"),
+    }
+)
+
 plugin.pipelines.register_function(
     function=q2_annotate.eggnog.search_orthologs_diamond,
     inputs={
-        "seqs": SampleData[Contigs] | SampleData[MAGs] | FeatureData[MAG],
+        "seqs": T_orthologs_in,
         "db": ReferenceDB[Diamond],
     },
     parameters={"num_cpus": Int, "db_in_memory": Bool, **partition_params},
@@ -784,7 +792,7 @@ plugin.pipelines.register_function(
         **partition_param_descriptions,
     },
     outputs=[
-        ("eggnog_hits", SampleData[Orthologs]),
+        ("eggnog_hits", SampleData[Orthologs % P_orthologs_out]),
         ("table", FeatureTable[Frequency]),
         ("loci", GenomeData[Loci]),
     ],
@@ -802,7 +810,7 @@ plugin.pipelines.register_function(
 plugin.pipelines.register_function(
     function=q2_annotate.eggnog.search_orthologs_hmmer,
     inputs={
-        "seqs": SampleData[Contigs | MAGs] | FeatureData[MAG],
+        "seqs": T_orthologs_in,
         "pressed_hmm_db": ProfileHMM[PressedProtein],
         "idmap": EggnogHmmerIdmap,
         "seed_alignments": GenomeData[Proteins],
@@ -828,7 +836,7 @@ plugin.pipelines.register_function(
         **partition_param_descriptions,
     },
     outputs=[
-        ("eggnog_hits", SampleData[Orthologs]),
+        ("eggnog_hits", SampleData[Orthologs % P_orthologs_out]),
         ("table", FeatureTable[Frequency]),
         ("loci", GenomeData[Loci]),
     ],
@@ -846,7 +854,7 @@ plugin.pipelines.register_function(
 plugin.methods.register_function(
     function=q2_annotate.eggnog._eggnog_diamond_search,
     inputs={
-        "seqs": SampleData[Contigs] | SampleData[MAGs] | FeatureData[MAG],
+        "seqs": T_orthologs_in,
         "db": ReferenceDB[Diamond],
     },
     parameters={"num_cpus": Int, "db_in_memory": Bool},
@@ -863,7 +871,7 @@ plugin.methods.register_function(
         ),
     },
     outputs=[
-        ("eggnog_hits", SampleData[Orthologs]),
+        ("eggnog_hits", SampleData[Orthologs % P_orthologs_out]),
         ("table", FeatureTable[Frequency]),
         ("loci", GenomeData[Loci]),
     ],
@@ -890,7 +898,7 @@ plugin.methods.register_function(
 plugin.methods.register_function(
     function=q2_annotate.eggnog._eggnog_hmmer_search,
     inputs={
-        "seqs": SampleData[Contigs] | SampleData[MAGs] | FeatureData[MAG],
+        "seqs": T_orthologs_in,
         "idmap": EggnogHmmerIdmap,
         "pressed_hmm_db": ProfileHMM[PressedProtein],
         "seed_alignments": GenomeData[Proteins],
@@ -918,7 +926,7 @@ plugin.methods.register_function(
         ),
     },
     outputs=[
-        ("eggnog_hits", SampleData[Orthologs]),
+        ("eggnog_hits", SampleData[Orthologs % P_orthologs_out]),
         ("table", FeatureTable[Frequency]),
         ("loci", GenomeData[Loci]),
     ],
@@ -955,10 +963,18 @@ plugin.methods.register_function(
     description="Create an eggnog table.",
 )
 
+P_orthologs_in, P_eggnog_out = TypeMap(
+    {
+        Properties("contigs", "mags"): Properties("contigs", "mags"),
+        Properties("contigs"): Properties("contigs"),
+        Properties("mags"): Properties("mags"),
+    }
+)
+
 plugin.pipelines.register_function(
     function=q2_annotate.eggnog.map_eggnog,
     inputs={
-        "eggnog_hits": SampleData[Orthologs],
+        "eggnog_hits": SampleData[Orthologs % P_orthologs_in],
         "db": ReferenceDB[Eggnog],
     },
     input_descriptions={
@@ -979,7 +995,7 @@ plugin.pipelines.register_function(
         "num_cpus": ("Number of CPUs to utilize. '0' will use all available."),
         **partition_param_descriptions,
     },
-    outputs=[("ortholog_annotations", GenomeData[NOG])],
+    outputs=[("ortholog_annotations", GenomeData[NOG % P_eggnog_out])],
     output_descriptions={"ortholog_annotations": "Annotated hits."},
     name="Annotate orthologs against eggNOG database.",
     description="Apply eggnog mapper to annotate seed orthologs.",
@@ -989,7 +1005,7 @@ plugin.pipelines.register_function(
 plugin.methods.register_function(
     function=q2_annotate.eggnog._eggnog_annotate,
     inputs={
-        "eggnog_hits": SampleData[Orthologs],
+        "eggnog_hits": SampleData[Orthologs % P_orthologs_in],
         "db": ReferenceDB[Eggnog],
     },
     parameters={"db_in_memory": Bool, "num_cpus": Int % Range(0, None)},
@@ -1001,7 +1017,7 @@ plugin.methods.register_function(
         ),
         "num_cpus": ("Number of CPUs to utilize. '0' will use all available."),
     },
-    outputs=[("ortholog_annotations", GenomeData[NOG])],
+    outputs=[("ortholog_annotations", GenomeData[NOG % P_eggnog_out])],
     name="Annotate orthologs against eggNOG database.",
     description="Apply eggnog mapper to annotate seed orthologs.",
     citations=[citations["huerta_cepas_eggnog_2019"]],
@@ -1322,27 +1338,43 @@ plugin.methods.register_function(
     ),
     citations=[],
 )
+I_destination_sequences, O_transferred_annotations = TypeMap(
+    {
+        FeatureData[MAG]: GenomeData[NOG % Properties("mags")],
+        SampleData[MAGs]: GenomeData[NOG % Properties("mags")],
+    }
+)
 
-plugin.methods.register_function(
+
+I_source_annotations = TypeMatch(
+    [
+        GenomeData[NOG],
+        GenomeData[NOG % Properties("contigs")],
+        GenomeData[NOG % Properties("mags")],
+        GenomeData[NOG % Properties("contigs", "mags")],
+    ]
+)
+
+plugin.pipelines.register_function(
     function=q2_annotate.eggnog.transfer_eggnog_annotations,
     inputs={
-        "ortholog_annotations": GenomeData[NOG],
-        "destination": FeatureData[MAG] | SampleData[MAGs],
-        "contig_map": FeatureMap[MAGtoContigs],
+        "source_annotations": I_source_annotations,
+        "destination_sequences": I_destination_sequences,
+        "source_contig_map": FeatureMap[MAGtoContigs],
     },
     parameters={},
-    outputs=[("transferred_annotations", GenomeData[NOG])],
+    outputs=[("transferred_annotations", O_transferred_annotations)],
     input_descriptions={
-        "ortholog_annotations": "Ortholog annotations to transfer or aggregate.",
-        "destination": (
+        "source_annotations": "Ortholog annotations to transfer or aggregate.",
+        "destination_sequences": (
             "MAGs to transfer annotations to. Accepts either SampleData[MAGs] "
             "or FeatureData[MAG] (e.g. dereplicated MAGs)."
         ),
-        "contig_map": (
+        "source_contig_map": (
             "Mapping of MAG IDs to contig IDs, as produced by "
-            "bin-contigs-metabat. Only used when the source annotations are "
-            "contig-level; if omitted in that case, the map is built "
-            "automatically from the destination MAG sequences instead."
+            "bin-contigs-metabat. If not provided when transferring "
+            "contig-level annotations, the map will be built automatically "
+            "from the destination MAG sequences."
         ),
     },
     parameter_descriptions={},
@@ -1353,12 +1385,11 @@ plugin.methods.register_function(
     description=(
         "Transfers eggNOG ortholog annotations onto a set of MAGs or "
         "dereplicated MAGs. Contig-level source annotations are aggregated "
-        "into per-MAG files; MAG-level source annotations are copied over "
-        "for MAGs matching the destination."
+        "into per-MAG files using the contig-to-MAG mapping; MAG-level "
+        "source annotations are copied for MAGs matching the destination."
     ),
     citations=[],
 )
-
 
 TMR = TypeMatch(
     [
