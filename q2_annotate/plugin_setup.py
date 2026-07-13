@@ -1347,10 +1347,8 @@ I_destination_sequences, O_transferred_annotations = TypeMap(
 
 I_source_annotations = TypeMatch(
     [
-        GenomeData[NOG],
         GenomeData[NOG % Properties("contigs")],
         GenomeData[NOG % Properties("mags")],
-        GenomeData[NOG % Properties("contigs", "mags")],
     ]
 )
 

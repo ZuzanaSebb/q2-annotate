@@ -162,10 +162,14 @@ class TestAnnotateMagsFromContigs(TestPluginBase):
             self.get_data_path("mag-to-contigs-nomatch/"), mode="r"
         ).file.view(dict)
 
-    def _build_destination_sequences(self, destination_type, contig_ids_by_mag=None):
-        root = Path(self.temp_dir.name, f"{destination_type}-destination")
+    def _build_destination_sequences(
+        self, destination_type, contig_ids_by_mag=None, root_name=None
+    ):
+        root = Path(
+            self.temp_dir.name, root_name or f"{destination_type}-destination"
+        )
         return _build_destination(
-            root, destination_type, (MAG1, MAG2), contig_ids_by_mag
+            root, destination_type, (CONTIG_MAG1, CONTIG_MAG2), contig_ids_by_mag
         )
 
     def _query_ids(self, result, mag_uuid):
@@ -176,7 +180,7 @@ class TestAnnotateMagsFromContigs(TestPluginBase):
         resolved_map = _resolve_contig_map(
             self.destination_sequences, self.source_contig_map
         )
-        self.assertEqual(set(resolved_map.keys()), {MAG1, MAG2})
+        self.assertEqual(set(resolved_map.keys()), {CONTIG_MAG1, CONTIG_MAG2})
 
     def test_load_annotation_rows(self):
         obs = _load_annotation_rows(self.source_annotations)
@@ -251,18 +255,24 @@ class TestAnnotateMagsFromContigs(TestPluginBase):
                 self.source_contig_map,
             ),
             "sample_data_with_contig_map": (
-                self._build_destination_sequences("sample_data"),
+                self._build_destination_sequences(
+                    "sample_data", root_name="sample-data-with-contig-map"
+                ),
                 self.source_contig_map,
             ),
             "feature_data_without_contig_map": (
                 self._build_destination_sequences(
-                    "feature_data", self.source_contig_map
+                    "feature_data",
+                    self.source_contig_map,
+                    root_name="feature-data-without-contig-map",
                 ),
                 None,
             ),
             "sample_data_without_contig_map": (
                 self._build_destination_sequences(
-                    "sample_data", self.source_contig_map
+                    "sample_data",
+                    self.source_contig_map,
+                    root_name="sample-data-without-contig-map",
                 ),
                 None,
             ),
@@ -275,12 +285,16 @@ class TestAnnotateMagsFromContigs(TestPluginBase):
                     contig_map,
                     is_contig_typed=True,
                 )
-                self.assertEqual(set(result.annotation_dict().keys()), {MAG1, MAG2})
                 self.assertEqual(
-                    sorted(self._query_ids(result, MAG1)),
+                    set(result.annotation_dict().keys()), {CONTIG_MAG1, CONTIG_MAG2}
+                )
+                self.assertEqual(
+                    sorted(self._query_ids(result, CONTIG_MAG1)),
                     ["k141_100_0", "k141_100_1", "k141_200_0"],
                 )
-                self.assertEqual(self._query_ids(result, MAG2), ["k141_300_0"])
+                self.assertEqual(
+                    self._query_ids(result, CONTIG_MAG2), ["k141_300_0"]
+                )
 
     def test_aggregate_warns_on_unmatched_rows(self):
         with self.assertWarns(UserWarning):
@@ -290,7 +304,7 @@ class TestAnnotateMagsFromContigs(TestPluginBase):
                 self.source_contig_map_partial,
                 is_contig_typed=True,
             )
-        self.assertEqual(set(result.annotation_dict().keys()), {MAG1})
+        self.assertEqual(set(result.annotation_dict().keys()), {CONTIG_MAG1})
 
     def test_aggregate_raises_when_nothing_matches(self):
         with self.assertRaisesRegex(ValueError, "No annotation rows could be"):
