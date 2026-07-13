@@ -55,7 +55,8 @@ class TestAnnotate(TestPluginBase):
 
     def test_eggnog_annotate_parallel(self):
         orthologs = qiime2.Artifact.import_data(
-            "SampleData[Orthologs]", self.get_data_path("good_hits/")
+            "SampleData[Orthologs % Properties('contigs')]",
+            self.get_data_path("good_hits/"),
         )
 
         with self.test_config:
