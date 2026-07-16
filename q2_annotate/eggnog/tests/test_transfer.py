@@ -165,9 +165,7 @@ class TestAnnotateMagsFromContigs(TestPluginBase):
     def _build_destination_sequences(
         self, destination_type, contig_ids_by_mag=None, root_name=None
     ):
-        root = Path(
-            self.temp_dir.name, root_name or f"{destination_type}-destination"
-        )
+        root = Path(self.temp_dir.name, root_name or f"{destination_type}-destination")
         return _build_destination(
             root, destination_type, (CONTIG_MAG1, CONTIG_MAG2), contig_ids_by_mag
         )
@@ -292,9 +290,7 @@ class TestAnnotateMagsFromContigs(TestPluginBase):
                     sorted(self._query_ids(result, CONTIG_MAG1)),
                     ["k141_100_0", "k141_100_1", "k141_200_0"],
                 )
-                self.assertEqual(
-                    self._query_ids(result, CONTIG_MAG2), ["k141_300_0"]
-                )
+                self.assertEqual(self._query_ids(result, CONTIG_MAG2), ["k141_300_0"])
 
     def test_aggregate_warns_on_unmatched_rows(self):
         with self.assertWarns(UserWarning):
