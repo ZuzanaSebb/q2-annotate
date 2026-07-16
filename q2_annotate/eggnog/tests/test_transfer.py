@@ -107,9 +107,7 @@ class TestTransferAnnotations(TestPluginBase):
 
     def test_transfer_to_sample_data(self):
         destination_sequences = self._build_sample_data_destination([MAG1, MAG2])
-        result = _copy_mag_annotations(
-            self.source_annotations, destination_sequences
-        )
+        result = _copy_mag_annotations(self.source_annotations, destination_sequences)
         src = self.source_annotations.annotation_dict()
         self.assertEqual(set(result.annotation_dict().keys()), {MAG1, MAG2})
         for uuid, path in result.annotation_dict().items():
