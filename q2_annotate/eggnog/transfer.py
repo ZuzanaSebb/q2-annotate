@@ -14,11 +14,9 @@ import pandas as pd
 import skbio
 from qiime2.core.type import Properties
 
-from q2_types.feature_data import FeatureData
-from q2_types.feature_data_mag import MAG, MAGSequencesDirFmt
+from q2_types.feature_data_mag import MAGSequencesDirFmt
 from q2_types.genome_data import GenomeData, NOG, OrthologAnnotationDirFmt
-from q2_types.per_sample_sequences import MAGs, MultiMAGSequencesDirFmt
-from q2_types.sample_data import SampleData
+from q2_types.per_sample_sequences import MultiMAGSequencesDirFmt
 
 
 def _validate_mag_ids(mag_ids: set, annotations: dict) -> set:
@@ -45,21 +43,6 @@ def _copy_annotation_files(annotations: dict) -> OrthologAnnotationDirFmt:
     for src_path in annotations.values():
         shutil.copy2(src_path, str(result.path / Path(src_path).name))
     return result
-
-
-def _is_source_contig_typed(source_annotations) -> bool:
-    artifact_type = source_annotations.type
-    is_contigs = artifact_type <= GenomeData[NOG % Properties("contigs")]
-    is_mags = artifact_type <= GenomeData[NOG % Properties("mags")]
-
-    if not is_contigs and not is_mags:
-        raise ValueError(
-            "`source_annotations` does not carry the 'contigs' or 'mags' "
-            "semantic type property, so it is not possible to determine "
-            "whether it originates from contig- or MAG-level annotations."
-        )
-
-    return is_contigs
 
 
 def _get_mag_ids(
@@ -211,17 +194,11 @@ def _annotate_mags_from_contigs(
     return result
 
 
-def _transfer_eggnog_annotations(
+def _copy_mag_annotations(
     source_annotations: OrthologAnnotationDirFmt,
     destination_sequences: Union[MAGSequencesDirFmt, MultiMAGSequencesDirFmt],
-    source_contig_map: dict = None,
-    is_contig_typed: bool = False,
 ) -> OrthologAnnotationDirFmt:
-    if is_contig_typed:
-        return _annotate_mags_from_contigs(
-            source_annotations, destination_sequences, source_contig_map
-        )
-
+    """Copy MAG-level eggNOG annotations for MAGs matching the destination."""
     mag_ids = _get_mag_ids(destination_sequences)
     annotations = source_annotations.annotation_dict()
     matched_ids = _validate_mag_ids(mag_ids, annotations)
@@ -235,32 +212,20 @@ def transfer_eggnog_annotations(
     source_contig_map=None,
 ):
     """Transfer or aggregate eggNOG annotations based on source and destination."""
-    source_is_contig_typed = _is_source_contig_typed(source_annotations)
-
-    if not source_is_contig_typed and source_contig_map is not None:
-        raise ValueError(
-            "`source_contig_map` is only valid for contig-level source annotations."
+    if source_annotations.type <= GenomeData[NOG % Properties("contigs")]:
+        transfer_action = ctx.get_action("annotate", "_annotate_mags_from_contigs")
+        (transferred_annotations,) = transfer_action(
+            source_annotations, destination_sequences, source_contig_map
         )
-
-    source_fmt = source_annotations.view(OrthologAnnotationDirFmt)
-    if destination_sequences.type <= FeatureData[MAG]:
-        destination_fmt = destination_sequences.view(MAGSequencesDirFmt)
-    elif destination_sequences.type <= SampleData[MAGs]:
-        destination_fmt = destination_sequences.view(MultiMAGSequencesDirFmt)
     else:
-        raise TypeError(
-            f"Unsupported `destination_sequences` type: {destination_sequences.type}."
+        if source_contig_map is not None:
+            raise ValueError(
+                "`source_contig_map` is only valid for contig-level source "
+                "annotations."
+            )
+        transfer_action = ctx.get_action("annotate", "_copy_mag_annotations")
+        (transferred_annotations,) = transfer_action(
+            source_annotations, destination_sequences
         )
 
-    contig_map = source_contig_map.view(dict) if source_contig_map is not None else None
-    result = _transfer_eggnog_annotations(
-        source_fmt,
-        destination_fmt,
-        source_contig_map=contig_map,
-        is_contig_typed=source_is_contig_typed,
-    )
-
-    transferred_annotations = ctx.make_artifact(
-        "GenomeData[NOG % Properties('mags')]", result
-    )
     return (transferred_annotations,)

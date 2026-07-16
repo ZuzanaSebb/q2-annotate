@@ -14,7 +14,8 @@ from qiime2.core.type import Properties
 from qiime2.plugin.testing import TestPluginBase
 
 from q2_annotate.eggnog.transfer import (
-    _transfer_eggnog_annotations,
+    _annotate_mags_from_contigs,
+    _copy_mag_annotations,
     _load_annotation_rows,
     _map_rows_to_mag_ids,
     _require_matched_annotation_rows,
@@ -90,7 +91,7 @@ class TestTransferAnnotations(TestPluginBase):
         return _build_destination(root, "sample_data", mag_ids)
 
     def test_transfer_to_feature_data(self):
-        result = _transfer_eggnog_annotations(
+        result = _copy_mag_annotations(
             self.source_annotations, self.destination_sequences
         )
         src = self.source_annotations.annotation_dict()
@@ -106,7 +107,7 @@ class TestTransferAnnotations(TestPluginBase):
 
     def test_transfer_to_sample_data(self):
         destination_sequences = self._build_sample_data_destination([MAG1, MAG2])
-        result = _transfer_eggnog_annotations(
+        result = _copy_mag_annotations(
             self.source_annotations, destination_sequences
         )
         src = self.source_annotations.annotation_dict()
@@ -121,7 +122,7 @@ class TestTransferAnnotations(TestPluginBase):
         with self.assertRaisesRegex(
             ValueError, "No annotation files matched the destination MAG IDs"
         ):
-            _transfer_eggnog_annotations(self.source_annotations, destination_sequences)
+            _copy_mag_annotations(self.source_annotations, destination_sequences)
 
     def test_transfer_warns_on_partial_match(self):
         missing_mag = "00000000-0000-4000-8000-000000000000"
@@ -132,7 +133,7 @@ class TestTransferAnnotations(TestPluginBase):
         destination_sequences = MAGSequencesDirFmt(root, mode="r")
 
         with self.assertWarns(UserWarning) as cm:
-            result = _transfer_eggnog_annotations(
+            result = _copy_mag_annotations(
                 self.source_annotations, destination_sequences
             )
         self.assertIn("had no matching annotation file", str(cm.warning))
@@ -277,11 +278,10 @@ class TestAnnotateMagsFromContigs(TestPluginBase):
         }
         for name, (destination_sequences, contig_map) in cases.items():
             with self.subTest(name=name):
-                result = _transfer_eggnog_annotations(
+                result = _annotate_mags_from_contigs(
                     self.source_annotations,
                     destination_sequences,
                     contig_map,
-                    is_contig_typed=True,
                 )
                 self.assertEqual(
                     set(result.annotation_dict().keys()), {CONTIG_MAG1, CONTIG_MAG2}
@@ -294,21 +294,19 @@ class TestAnnotateMagsFromContigs(TestPluginBase):
 
     def test_aggregate_warns_on_unmatched_rows(self):
         with self.assertWarns(UserWarning):
-            result = _transfer_eggnog_annotations(
+            result = _annotate_mags_from_contigs(
                 self.source_annotations,
                 self.destination_sequences,
                 self.source_contig_map_partial,
-                is_contig_typed=True,
             )
         self.assertEqual(set(result.annotation_dict().keys()), {CONTIG_MAG1})
 
     def test_aggregate_raises_when_nothing_matches(self):
         with self.assertRaisesRegex(ValueError, "No annotation rows could be"):
-            _transfer_eggnog_annotations(
+            _annotate_mags_from_contigs(
                 self.source_annotations,
                 self.destination_sequences,
                 self.source_contig_map_nomatch,
-                is_contig_typed=True,
             )
 
 

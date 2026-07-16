@@ -18,7 +18,8 @@ from .annotation import (
     extract_annotations,
 )
 from .transfer import (
-    _transfer_eggnog_annotations,
+    _annotate_mags_from_contigs,
+    _copy_mag_annotations,
     transfer_eggnog_annotations,
 )
 from .dbs import (
@@ -47,6 +48,7 @@ __all__ = [
     "search_orthologs_hmmer",
     "_eggnog_hmmer_search",
     "extract_annotations",
-    "_transfer_eggnog_annotations",
+    "_annotate_mags_from_contigs",
+    "_copy_mag_annotations",
     "transfer_eggnog_annotations",
 ]
