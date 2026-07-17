@@ -36,13 +36,11 @@ CONTIG_MAG2 = "22222222-2222-4222-8222-222222222222"
 
 
 def _build_fasta_content(contig_ids=None):
-    """Builds placeholder FASTA content, one record per contig ID."""
     contig_ids = ["placeholder"] if contig_ids is None else contig_ids
     return "".join(f">{contig_id}\nACGT\n" for contig_id in contig_ids)
 
 
-def _build_mag_dirfmt(root, mag_ids, contig_ids_by_mag=None):
-    """Builds a `MAGSequencesDirFmt` with one flat FASTA file per MAG."""
+def _build_mag_sequences(root, mag_ids, contig_ids_by_mag=None):
     root.mkdir()
     for mag_id in mag_ids:
         contig_ids = None if contig_ids_by_mag is None else contig_ids_by_mag[mag_id]
@@ -50,8 +48,7 @@ def _build_mag_dirfmt(root, mag_ids, contig_ids_by_mag=None):
     return MAGSequencesDirFmt(root, mode="r")
 
 
-def _build_multi_mag_dirfmt(root, mag_ids, contig_ids_by_mag=None):
-    """Builds a `MultiMAGSequencesDirFmt` with one sample per MAG."""
+def _build_multi_mag_sequences(root, mag_ids, contig_ids_by_mag=None):
     root.mkdir()
     manifest = ["sample-id,mag-id,filename\n"]
     for i, mag_id in enumerate(mag_ids, start=1):
@@ -67,14 +64,12 @@ def _build_multi_mag_dirfmt(root, mag_ids, contig_ids_by_mag=None):
 
 
 def _build_destination(root, destination_type, mag_ids, contig_ids_by_mag=None):
-    """Builds a destination sequences fixture of the given `destination_type`
-    ("feature_data" or "sample_data")."""
     if destination_type == "feature_data":
-        return _build_mag_dirfmt(root, mag_ids, contig_ids_by_mag)
-    return _build_multi_mag_dirfmt(root, mag_ids, contig_ids_by_mag)
+        return _build_mag_sequences(root, mag_ids, contig_ids_by_mag)
+    return _build_multi_mag_sequences(root, mag_ids, contig_ids_by_mag)
 
 
-class TestTransferAnnotations(TestPluginBase):
+class TestCopyMagAnnotations(TestPluginBase):
     package = "q2_annotate.eggnog.tests"
 
     def setUp(self):
@@ -90,7 +85,7 @@ class TestTransferAnnotations(TestPluginBase):
         root = Path(self.temp_dir.name, "sample-destination")
         return _build_destination(root, "sample_data", mag_ids)
 
-    def test_transfer_to_feature_data(self):
+    def test_copy_to_feature_data(self):
         result = _copy_mag_annotations(
             self.source_annotations, self.destination_sequences
         )
@@ -105,7 +100,7 @@ class TestTransferAnnotations(TestPluginBase):
         for uuid, path in result.annotation_dict().items():
             self.assertTrue(filecmp.cmp(src[uuid], path, shallow=False))
 
-    def test_transfer_to_sample_data(self):
+    def test_copy_to_sample_data(self):
         destination_sequences = self._build_sample_data_destination([MAG1, MAG2])
         result = _copy_mag_annotations(self.source_annotations, destination_sequences)
         src = self.source_annotations.annotation_dict()
@@ -113,7 +108,7 @@ class TestTransferAnnotations(TestPluginBase):
         for uuid, path in result.annotation_dict().items():
             self.assertTrue(filecmp.cmp(src[uuid], path, shallow=False))
 
-    def test_transfer_raises_on_no_match(self):
+    def test_copy_raises_on_no_match(self):
         uuid = "00000000-0000-4000-8000-000000000000"
         Path(self.temp_dir.name, f"{uuid}.fasta").touch()
         destination_sequences = MAGSequencesDirFmt(self.temp_dir.name, mode="r")
@@ -122,7 +117,7 @@ class TestTransferAnnotations(TestPluginBase):
         ):
             _copy_mag_annotations(self.source_annotations, destination_sequences)
 
-    def test_transfer_warns_on_partial_match(self):
+    def test_copy_warns_on_partial_match(self):
         missing_mag = "00000000-0000-4000-8000-000000000000"
         root = Path(self.temp_dir.name, "partial-destination")
         root.mkdir()
@@ -148,7 +143,7 @@ class TestAnnotateMagsFromContigs(TestPluginBase):
             self.get_data_path("contig-annotations/"), mode="r"
         )
 
-        self.destination_sequences = _build_mag_dirfmt(
+        self.destination_sequences = _build_mag_sequences(
             Path(self.temp_dir.name, "initial-destination"), (CONTIG_MAG1, CONTIG_MAG2)
         )
         self.source_contig_map = MAGtoContigsDirFmt(
