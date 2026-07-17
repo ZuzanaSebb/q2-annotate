@@ -1361,11 +1361,8 @@ plugin.pipelines.register_function(
     parameters={},
     outputs=[("transferred_annotations", O_transferred_annotations)],
     input_descriptions={
-        "source_annotations": "Ortholog annotations to transfer or aggregate.",
-        "destination_sequences": (
-            "MAGs to transfer annotations to. Accepts either SampleData[MAGs] "
-            "or FeatureData[MAG] (e.g. dereplicated MAGs)."
-        ),
+        "source_annotations": "EggNOG annotations to transfer.",
+        "destination_sequences": "MAGs to transfer annotations to.",
         "source_contig_map": (
             "Mapping of MAG IDs to contig IDs, as produced by "
             "bin-contigs-metabat. Only valid for contig-level source "
@@ -1375,11 +1372,11 @@ plugin.pipelines.register_function(
     },
     parameter_descriptions={},
     output_descriptions={
-        "transferred_annotations": "Transferred or aggregated annotations.",
+        "transferred_annotations": "Transferred annotations.",
     },
-    name="Transfer or aggregate eggNOG annotations.",
+    name="Transfer eggNOG annotations.",
     description=(
-        "Transfers eggNOG ortholog annotations onto a set of MAGs or "
+        "Transfers eggNOG annotations onto a set of MAGs or "
         "dereplicated MAGs. Contig-level source annotations are aggregated "
         "into per-MAG files using the contig-to-MAG mapping; MAG-level "
         "source annotations are copied for MAGs matching the destination."
@@ -1390,7 +1387,7 @@ plugin.pipelines.register_function(
 I_transfer_destination = TypeMatch([FeatureData[MAG], SampleData[MAGs]])
 
 plugin.methods.register_function(
-    function=q2_annotate.eggnog._annotate_mags_from_contigs,
+    function=q2_annotate.eggnog._transfer_annotations_from_contigs,
     inputs={
         "source_annotations": GenomeData[NOG % Properties("contigs")],
         "destination_sequences": I_transfer_destination,
@@ -1399,11 +1396,8 @@ plugin.methods.register_function(
     parameters={},
     outputs=[("transferred_annotations", GenomeData[NOG % Properties("mags")])],
     input_descriptions={
-        "source_annotations": "Contig-level ortholog annotations to aggregate.",
-        "destination_sequences": (
-            "MAGs to aggregate annotations onto. Accepts either "
-            "SampleData[MAGs] or FeatureData[MAG] (e.g. dereplicated MAGs)."
-        ),
+        "source_annotations": "Contig-level eggNOG annotations.",
+        "destination_sequences": "MAGs to transfer annotations onto.",
         "source_contig_map": (
             "Mapping of MAG IDs to contig IDs, as produced by "
             "bin-contigs-metabat. If not provided, the map will be built "
@@ -1412,18 +1406,18 @@ plugin.methods.register_function(
     },
     parameter_descriptions={},
     output_descriptions={
-        "transferred_annotations": "Aggregated per-MAG annotations.",
+        "transferred_annotations": "Transferred per-MAG annotations.",
     },
-    name="Aggregate contig-level eggNOG annotations onto MAGs.",
+    name="Transfer contig-level eggNOG annotations onto MAGs.",
     description=(
-        "Aggregates contig-level eggNOG ortholog annotations into per-MAG "
+        "Transfers contig-level eggNOG annotations into per-MAG "
         "files using a contig-to-MAG mapping."
     ),
     citations=[],
 )
 
 plugin.methods.register_function(
-    function=q2_annotate.eggnog._copy_mag_annotations,
+    function=q2_annotate.eggnog._transfer_annotations_from_mags,
     inputs={
         "source_annotations": GenomeData[NOG % Properties("mags")],
         "destination_sequences": I_transfer_destination,
@@ -1431,19 +1425,16 @@ plugin.methods.register_function(
     parameters={},
     outputs=[("transferred_annotations", GenomeData[NOG % Properties("mags")])],
     input_descriptions={
-        "source_annotations": "MAG-level ortholog annotations to transfer.",
-        "destination_sequences": (
-            "MAGs to transfer annotations onto. Accepts either "
-            "SampleData[MAGs] or FeatureData[MAG] (e.g. dereplicated MAGs)."
-        ),
+        "source_annotations": "MAG-level annotations to transfer.",
+        "destination_sequences": "MAGs to transfer annotations onto.",
     },
     parameter_descriptions={},
     output_descriptions={
         "transferred_annotations": "Transferred per-MAG annotations.",
     },
-    name="Transfer MAG-level eggNOG annotations onto matching MAGs.",
+    name="Transfer MAG-level annotations onto matching MAGs.",
     description=(
-        "Copies MAG-level eggNOG ortholog annotations for MAGs matching "
+        "Transfer MAG-level  annotations for MAGs matching "
         "the destination."
     ),
     citations=[],
