@@ -1,0 +1,14 @@
+## Fri May 25 13:04:02 2026
+## emapper-2.1.12
+## emapper.py -m no_search --annotate_hits_table input --cpu 1
+##
+#query	seed_ortholog	evalue	score	eggNOG_OGs	max_annot_lvl	COG_category	Description	Preferred_name	GOs	EC	KEGG_ko	KEGG_Pathway	KEGG_Module	KEGG_Reaction	KEGG_rclass	BRITE	KEGG_TC	CAZy	BiGG_Reaction	PFAMs
+mtjebimcR24S9DZ62TY6Fh_1	316407.85674931	5.33e-49	156.0	2E5B9@1|root,3303D@2|Bacteria,1N9CF@1224|Proteobacteria,1SFBX@1236|Gammaproteobacteria	1236|Gammaproteobacteria	K	response to cold	ynaE	GO:0006950,GO:0008150,GO:0009266,GO:0009409,GO:0009628,GO:0050896	-	-	-	-	-	-	-	-	-	-	-
+mtjebimcR24S9DZ62TY6Fh_2	316407.1742545	5.32e-133	377.0	COG1961@1|root,COG1961@2|Bacteria,1RA0V@1224|Proteobacteria,1RPSK@1236|Gammaproteobacteria,3XR8X@561|Escherichia	1236|Gammaproteobacteria	L	recombinase activity	pinR	GO:0000150,GO:0003674,GO:0003824,GO:0006139,GO:0006259,GO:0006310,GO:0006725,GO:0006807,GO:0008150,GO:0008152,GO:0009987,GO:0034641,GO:0043170,GO:0044237,GO:0044238,GO:0044260,GO:0046483,GO:0071704,GO:0090304,GO:0140097,GO:1901360	-	ko:K14060	-	-	-	-	ko00000	-	-	-	HTH_7,Resolvase
+mtjebimcR24S9DZ62TY6Fh_3	316407.1742546	1.95e-137	388.0	COG2110@1|root,COG2110@2|Bacteria,1MYT5@1224|Proteobacteria,1S7KD@1236|Gammaproteobacteria,3XPJT@561|Escherichia	1236|Gammaproteobacteria	S	Tail fiber assembly protein homolog from lambdoid prophage	tfaQ	-	-	-	-	-	-	-	-	-	-	-	Caudo_TAP
+mtjebimcR24S9DZ62TY6Fh_4	155864.EDL933_1849	4.42e-05	45.8	COG5301@1|root,COG5301@2|Bacteria,1RFCQ@1224|Proteobacteria,1S5SP@1236|Gammaproteobacteria,3XQHT@561|Escherichia	1236|Gammaproteobacteria	M	tail fiber protein	stfR	-	-	-	-	-	-	-	-	-	-	-	Collar,DUF3751,Phage_fiber,Phage_fiber_2,phage_tail_N
+NNqHkme8fLmessev7CnUMU_1	797304.Natgr_2991	2.19e-148	441.0	arCOG10180@1|root,arCOG10180@2157|Archaea,2XUY5@28890|Euryarchaeota,23U72@183963|Halobacteria	183963|Halobacteria	S	membrane-bound metal-dependent	-	-	-	-	-	-	-	-	-	-	-	-	YdjM
+NNqHkme8fLmessev7CnUMU_2	797304.Natgr_2992	1.08e-110	318.0	arCOG00381@1|root,arCOG00382@2157|Archaea,2XXWW@28890|Euryarchaeota,23WAT@183963|Halobacteria	183963|Halobacteria	K	membrane-associated protein domain	-	-	-	-	-	-	-	-	-	-	-	-	HTH_IclR
+## 6 queries scanned
+## Total time (seconds): 1.0
+## Rate: 6.00 q/s
