@@ -1434,8 +1434,7 @@ plugin.methods.register_function(
     },
     name="Transfer MAG-level annotations onto matching MAGs.",
     description=(
-        "Transfer MAG-level  annotations for MAGs matching "
-        "the destination."
+        "Transfer MAG-level  annotations for MAGs matching " "the destination."
     ),
     citations=[],
 )

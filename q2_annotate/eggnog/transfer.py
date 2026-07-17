@@ -140,8 +140,8 @@ def _warn_unmatched_annotation_rows(unmatched: int, total: int) -> None:
     if unmatched > 0:
         pct = unmatched / total * 100
         warnings.warn(
-            f"{unmatched} of {total} annotation row(s) ({pct:.1f}%) were on "
-            "contigs not present in the contig map (e.g. unbinned contigs) "
+            f"{unmatched} of {total} annotation row(s) ({pct:.1f}%) could not be "
+            "matched to any MAG in the destination sequences "
             "and were skipped.",
             UserWarning,
         )
@@ -169,12 +169,12 @@ def _write_grouped_annotations(
     return result
 
 
-def _annotate_mags_from_contigs(
+def _transfer_annotations_from_contigs(
     source_annotations: OrthologAnnotationDirFmt,
     destination_sequences: Union[MAGSequencesDirFmt, MultiMAGSequencesDirFmt],
     source_contig_map: dict = None,
 ) -> OrthologAnnotationDirFmt:
-    """Aggregate contig-level eggNOG annotations -> MAG-level annotations."""
+    """Transfer contig-level eggNOG annotations -> MAG-level annotations."""
     contig_map = _resolve_contig_map(destination_sequences, source_contig_map)
     contig_to_mag, n_contigs_by_mag = _reverse_contig_map(contig_map)
     all_annotations = _load_annotation_rows(source_annotations)
@@ -186,7 +186,7 @@ def _annotate_mags_from_contigs(
     result = _write_grouped_annotations(matched, n_contigs_by_mag)
 
     print(
-        f"Aggregated {len(matched)} of {total} annotation "
+        f"Transferred {len(matched)} of {total} annotation "
         f"row(s) into {matched['mag_uuid'].nunique()} MAG(s); "
         f"{unmatched} row(s) skipped."
     )
@@ -194,11 +194,11 @@ def _annotate_mags_from_contigs(
     return result
 
 
-def _copy_mag_annotations(
+def _transfer_annotations_from_mags(
     source_annotations: OrthologAnnotationDirFmt,
     destination_sequences: Union[MAGSequencesDirFmt, MultiMAGSequencesDirFmt],
 ) -> OrthologAnnotationDirFmt:
-    """Copy MAG-level eggNOG annotations for MAGs matching the destination."""
+    """Transfer MAG-level eggNOG annotations for MAGs matching the destination."""
     mag_ids = _get_mag_ids(destination_sequences)
     annotations = source_annotations.annotation_dict()
     matched_ids = _validate_mag_ids(mag_ids, annotations)
@@ -211,21 +211,21 @@ def transfer_eggnog_annotations(
     destination_sequences,
     source_contig_map=None,
 ):
-    """Transfer or aggregate eggNOG annotations based on source and destination."""
+    """Transfer eggNOG annotations based on source and destination."""
     if source_annotations.type <= GenomeData[NOG % Properties("contigs")]:
-        transfer_action = ctx.get_action("annotate", "_annotate_mags_from_contigs")
-        (transferred_annotations,) = transfer_action(
-            source_annotations, destination_sequences, source_contig_map
+        transfer_action = ctx.get_action(
+            "annotate", "_transfer_annotations_from_contigs"
         )
+        args = (source_annotations, destination_sequences, source_contig_map)
     else:
         if source_contig_map is not None:
-            raise ValueError(
+            warnings.warn(
                 "`source_contig_map` is only valid for contig-level source "
-                "annotations."
+                "annotations and will be ignored.",
+                UserWarning,
             )
-        transfer_action = ctx.get_action("annotate", "_copy_mag_annotations")
-        (transferred_annotations,) = transfer_action(
-            source_annotations, destination_sequences
-        )
+        transfer_action = ctx.get_action("annotate", "_transfer_annotations_from_mags")
+        args = (source_annotations, destination_sequences)
 
+    (transferred_annotations,) = transfer_action(*args)
     return (transferred_annotations,)
