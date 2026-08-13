@@ -144,10 +144,10 @@ class TestTransferAnnotationsFromContigs(TestPluginBase):
             self.expected_contig_map,
         )
 
-    def test_build_contig_map_from_mags_per_sample(self):    
+    def test_build_contig_map_from_mags_per_sample(self):
         contig_map_from_mags_per_sample = _build_contig_map(
             self.destination_sequences_per_sample
-        )        
+        )
         self.assertEqual(
             contig_map_from_mags_per_sample,
             self.expected_contig_map,
@@ -169,7 +169,7 @@ class TestTransferAnnotationsFromContigs(TestPluginBase):
         resolved_map_from_derep_mags = _resolve_contig_map(
             self.destination_sequences, self.source_contig_map
         )
-  
+
         self.assertEqual(
             resolved_map_from_derep_mags,
             self.expected_contig_map,
@@ -182,7 +182,7 @@ class TestTransferAnnotationsFromContigs(TestPluginBase):
         resolved_map_from_mags_per_sample = _resolve_contig_map(
             self.destination_sequences_per_sample
         )
-        
+
         self.assertEqual(
             resolved_map_from_mags_per_sample,
             self.expected_contig_map,
@@ -200,7 +200,14 @@ class TestTransferAnnotationsFromContigs(TestPluginBase):
             MAG2: ["ipio8kS3aBF5G9Lw6XsSxj"],
         }
         contig_to_mag, n_contigs_by_mag = _reverse_contig_map(source_contig_map)
-        self.assertDictEqual(contig_to_mag, {"mtjebimcR24S9DZ62TY6Fh": MAG1, "NNqHkme8fLmessev7CnUMU": MAG1, "ipio8kS3aBF5G9Lw6XsSxj": MAG2})
+        self.assertDictEqual(
+            contig_to_mag,
+            {
+                "mtjebimcR24S9DZ62TY6Fh": MAG1,
+                "NNqHkme8fLmessev7CnUMU": MAG1,
+                "ipio8kS3aBF5G9Lw6XsSxj": MAG2,
+            },
+        )
         self.assertDictEqual(n_contigs_by_mag, {MAG1: 2, MAG2: 1})
 
     def test_map_rows_to_mag_ids(self):
@@ -219,15 +226,13 @@ class TestTransferAnnotationsFromContigs(TestPluginBase):
                 "mag_uuid": [MAG1, MAG2],
             }
         )
-        pd.testing.assert_frame_equal(
-            matched.reset_index(drop=True), expected
-        )
+        pd.testing.assert_frame_equal(matched.reset_index(drop=True), expected)
 
     def test_require_matched_annotation_rows_raises_on_empty(self):
         tagged = self.test_annotations_df.assign(mag_uuid=None)
         with self.assertRaisesRegex(ValueError, "No annotation rows could be matched"):
             _require_matched_annotation_rows(tagged)
-    
+
     def test_warn_unmatched_annotation_rows_warns_when_nonzero(self):
         tagged = self.test_annotations_df.assign(mag_uuid=[MAG1, MAG2, None])
         matched, total = _require_matched_annotation_rows(tagged)
@@ -272,7 +277,7 @@ class TestTransferAnnotationsFromContigs(TestPluginBase):
         )
         self.assertEqual(
             Path(result.annotation_dict()[MAG2]).read_text(), expected_MAG2
-        )    
+        )
 
     def _assert_transfer(self, destination_sequences, source_contig_map=None):
         """Run _transfer_annotations_from_contigs and check that produced
@@ -311,12 +316,12 @@ class TestTransferAnnotationsFromContigs(TestPluginBase):
         self.assertNotIn("pXaG7nQ3mZtY8LbKdWs1Rf_1", mag1_ids + mag2_ids)
 
     def test_aggregate_contigs_into_mags_feature_data_with_contig_map(self):
-        self._assert_transfer(self.destination_sequences,
-                              self.source_contig_map)
+        self._assert_transfer(self.destination_sequences, self.source_contig_map)
 
     def test_aggregate_contigs_into_mags_sample_data_with_contig_map(self):
-        self._assert_transfer(self.destination_sequences_per_sample, 
-                              self.source_contig_map)
+        self._assert_transfer(
+            self.destination_sequences_per_sample, self.source_contig_map
+        )
 
     def test_aggregate_contigs_into_mags_feature_data_without_contig_map(self):
         self._assert_transfer(self.destination_sequences)
@@ -331,6 +336,7 @@ class TestTransferAnnotationsFromContigs(TestPluginBase):
                 self.destination_sequences,
                 self.source_contig_map_nomatch,
             )
+
 
 class TestTransferEggnogAnnotationsPipeline(TestPluginBase):
     package = "q2_annotate.eggnog.tests"
