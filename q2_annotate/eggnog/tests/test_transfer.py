@@ -190,9 +190,13 @@ class TestTransferAnnotationsFromContigs(TestPluginBase):
 
     def test_load_annotation_rows(self):
         obs = _load_annotation_rows(self.source_annotations)
-        self.assertEqual(len(obs), 10)
-        self.assertFalse(obs[obs.columns[0]].astype(str).str.startswith("##").any())
-        self.assertIn("pXaG7nQ3mZtY8LbKdWs1Rf_1", obs[obs.columns[0]].tolist())
+        exp = pd.read_csv(
+            self.get_data_path(
+                "expected-grouped-annotations/expected_annotation_rows.tsv"
+            ),
+            sep="\t",
+        )
+        pd.testing.assert_frame_equal(obs, exp)
 
     def test_reverse_contig_map(self):
         source_contig_map = {
@@ -212,9 +216,8 @@ class TestTransferAnnotationsFromContigs(TestPluginBase):
 
     def test_map_rows_to_mag_ids(self):
         obs = _map_rows_to_mag_ids(self.test_annotations_df, self.test_contig_to_mag)
-        self.assertEqual(obs.loc[0, "mag_uuid"], MAG1)
-        self.assertEqual(obs.loc[1, "mag_uuid"], MAG2)
-        self.assertTrue(pd.isna(obs.loc[2, "mag_uuid"]))
+        exp = pd.Series([MAG1, MAG2, None], name="mag_uuid")
+        pd.testing.assert_series_equal(obs["mag_uuid"], exp)
 
     def test_require_matched_annotation_rows(self):
         tagged = self.test_annotations_df.assign(mag_uuid=[MAG1, MAG2, None])
@@ -256,28 +259,19 @@ class TestTransferAnnotationsFromContigs(TestPluginBase):
             matched,
             {MAG1: 2, MAG2: 1},
         )
-        expected_MAG1 = (
-            f"## Transferred using transfer_eggnog_annotations (q2-annotate)\n"
-            f"## Source: contig-level annotations\n"
-            f"## MAG: {MAG1} | contigs: 2 | rows: 1\n"
-            f"##\n"
-            f"#query\tseed_ortholog\n"
-            f"mtjebimcR24S9DZ62TY6Fh_0\tortholog1\n"
-        )
-        expected_MAG2 = (
-            f"## Transferred using transfer_eggnog_annotations (q2-annotate)\n"
-            f"## Source: contig-level annotations\n"
-            f"## MAG: {MAG2} | contigs: 1 | rows: 1\n"
-            f"##\n"
-            f"#query\tseed_ortholog\n"
-            f"ipio8kS3aBF5G9Lw6XsSxj_0\tortholog2\n"
-        )
-        self.assertEqual(
-            Path(result.annotation_dict()[MAG1]).read_text(), expected_MAG1
-        )
-        self.assertEqual(
-            Path(result.annotation_dict()[MAG2]).read_text(), expected_MAG2
-        )
+        exp_MAG1 = Path(
+            self.get_data_path(
+                f"expected-grouped-annotations/{MAG1}.emapper.annotations"
+            )
+        ).read_text()
+        exp_MAG2 = Path(
+            self.get_data_path(
+                f"expected-grouped-annotations/{MAG2}.emapper.annotations"
+            )
+        ).read_text()
+
+        self.assertEqual(Path(result.annotation_dict()[MAG1]).read_text(), exp_MAG1)
+        self.assertEqual(Path(result.annotation_dict()[MAG2]).read_text(), exp_MAG2)
 
     def _assert_transfer(self, destination_sequences, source_contig_map=None):
         """Run _transfer_annotations_from_contigs and check that produced
