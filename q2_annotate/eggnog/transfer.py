@@ -164,7 +164,14 @@ def _write_grouped_annotations(
             fh.write(f"## MAG: {mag_uuid} | contigs: {n_contigs} | rows: {n_rows}\n")
             fh.write("##\n")
             fh.write(col_header)
-            group[data_cols].to_csv(fh, sep="\t", index=False, header=False)
+            if "evalue" in group:
+                group["evalue"] = group["evalue"].map("{:.2e}".format)
+            group[data_cols].to_csv(
+                fh,
+                sep="\t",
+                index=False,
+                header=False,
+            )
 
     return result
 
