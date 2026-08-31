@@ -108,7 +108,13 @@ def _load_annotation_rows(
 ) -> pd.DataFrame:
     frames = []
     for _id, fp in source_annotations.annotation_dict().items():
-        df = pd.read_csv(fp, sep="\t", skiprows=4)
+        df = pd.read_csv(
+            fp,
+            sep="\t",
+            skiprows=4,
+            dtype=str,
+            keep_default_na=False,
+        )
         first_col = df.columns[0]
         df = df[~df[first_col].astype(str).str.startswith("##")]
         frames.append(df)
@@ -164,8 +170,6 @@ def _write_grouped_annotations(
             fh.write(f"## MAG: {mag_uuid} | contigs: {n_contigs} | rows: {n_rows}\n")
             fh.write("##\n")
             fh.write(col_header)
-            if "evalue" in group:
-                group["evalue"] = group["evalue"].map("{:.2e}".format)
             group[data_cols].to_csv(
                 fh,
                 sep="\t",

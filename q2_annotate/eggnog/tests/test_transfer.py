@@ -195,6 +195,8 @@ class TestTransferAnnotationsFromContigs(TestPluginBase):
                 "expected-grouped-annotations/expected_annotation_rows.tsv"
             ),
             sep="\t",
+            dtype=str,
+            keep_default_na=False,
         )
         pd.testing.assert_frame_equal(obs, exp)
 
